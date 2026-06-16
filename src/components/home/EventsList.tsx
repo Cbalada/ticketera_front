@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEvents } from '@/hooks/useEvents';
 import { useSocket } from '@/providers/SocketProvider';
 import { Event } from '@/types';
@@ -55,7 +56,7 @@ export default function EventsList() {
         // Render first as featured card, others as secondary for layout parity
         if (idx === 0) {
           return (
-            <div key={event.id} className="md:col-span-8 relative rounded-xl overflow-hidden group h-[400px]">
+            <Link key={event.id} href={`/events/${event.id}`} className="md:col-span-8 relative rounded-xl overflow-hidden group h-[400px]">
               <Image
                 src={event.imageUrl}
                 alt={event.title}
@@ -74,17 +75,17 @@ export default function EventsList() {
                       {formatDate(event.date)}
                     </p>
                   </div>
-                  <button className="bg-primary-fixed text-on-primary-fixed p-4 rounded-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 shadow-lg">
+                  <div className="bg-primary-fixed text-on-primary-fixed p-4 rounded-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 shadow-lg">
                     <span className="material-symbols-outlined">confirmation_number</span>
-                  </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           );
         }
 
         return (
-          <div key={event.id} className="md:col-span-4 relative rounded-xl overflow-hidden group h-[400px]">
+          <Link key={event.id} href={`/events/${event.id}`} className="md:col-span-4 relative rounded-xl overflow-hidden group h-[400px]">
             <Image
               src={event.imageUrl}
               alt={event.title}
@@ -96,7 +97,7 @@ export default function EventsList() {
               <h4 className="font-display text-headline-md uppercase">{event.title}</h4>
               <p className="text-on-surface/80 text-sm">{formatDate(event.date)}</p>
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>
