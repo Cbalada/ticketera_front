@@ -20,7 +20,7 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
   });
 
-  const mutation = useMutation({
+  const mutation = useMutation<void, any, RegisterFormValues>({
     mutationFn: (data: RegisterFormValues) => fetchClient('/auth/register', { data, method: 'POST' }),
     onSuccess: () => {
       toast.success('Registro completado correctamente');
@@ -33,9 +33,11 @@ export default function RegisterPage() {
     },
   });
 
+  const isLoading = (mutation as any).isLoading ?? mutation.status === 'pending';
+
   const onSubmit = (data: RegisterFormValues) => {
     setApiError(null);
-    if (!mutation.isLoading) mutation.mutate(data);
+    if (!isLoading) mutation.mutate(data);
   };
 
   return (
@@ -100,9 +102,9 @@ export default function RegisterPage() {
               <button
                 className="mt-4 w-full bg-primary-fixed text-on-primary-fixed font-display font-bold py-4 rounded-lg active:scale-95 transition-all primary-glow"
                 type="submit"
-                disabled={mutation.isLoading}
+                disabled={isLoading}
               >
-                {mutation.isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
+                {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
               </button>
             </form>
             

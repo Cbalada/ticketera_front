@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormValues } from '@/features/auth/schemas';
+import type { AuthResponse } from '@/types';
 import { fetchClient } from '@/lib/fetchClient';
 import { useAuthStore } from '@/store/authStore';
 import { Navbar } from '@/components/common/Navbar';
@@ -19,7 +20,7 @@ export default function LoginPage() {
   const onSubmit = (data: LoginFormValues) => {
     (async () => {
       try {
-        const result = await fetchClient('/auth/login', { data });
+        const result = await fetchClient<AuthResponse>('/auth/login', { data });
         useAuthStore.getState().setAuth(result.user, result.accessToken, result.refreshToken);
         router.back();
       } catch (err) {

@@ -1,17 +1,43 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { useReservationStore } from '@/store/reservationStore';
+import { useQuery } from '@tanstack/react-query';
+import { getEvent } from '@/lib/eventsService';
+import type { EventSector } from '@/types';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { selectedSector, selectedQuantity } = useReservationStore();
+  const { selectedSector, selectedQuantity, selectedSectors, selectedEventId } = useReservationStore();
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'ewallet' | 'transfer' | null>('card');
 
-  const total = selectedSector ? parseInt(selectedSector.price) * selectedQuantity : 0;
+  const { data: event } = useQuery({
+    queryKey: ['event', selectedEventId],
+    queryFn: () => (selectedEventId ? getEvent(selectedEventId) : Promise.resolve(null as any)),
+    enabled: !!selectedEventId,
+  });
+
+  const total = useMemo(() => {
+    // If we have selectedSectors and event, compute properly
+    if (event && selectedSectors && Object.keys(selectedSectors).length > 0) {
+      return event.sectors.reduce((acc: number, s: EventSector) => {
+        const qty = selectedSectors[s.id] || 0;
+        return acc + qty * parseInt(s.price);
+      }, 0);
+    }
+    return selectedSector ? parseInt(selectedSector.price) * selectedQuantity : 0;
+  }, [event, selectedSectors, selectedSector, selectedQuantity]);
+
+  const totalQty = useMemo(() => {
+    if (selectedSectors && Object.keys(selectedSectors).length > 0) {
+      return Object.values(selectedSectors).reduce((a, b) => a + b, 0);
+    }
+    return selectedQuantity || 0;
+  }, [selectedSectors, selectedQuantity]);
+
   const serviceCharge = total * 0.15; // Mock 15%
   const finalTotal = total + serviceCharge;
 
@@ -121,30 +147,38 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-on-surface-variant font-medium">Fecha</span>
-                  <span className="font-bold text-white">20 Junio 2026</span>
+                  <span className="font-bold text-white">{event?.date ? new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(event.date)) : '—'}</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-on-surface-variant font-medium">Sector</span>
-                  <span className="font-bold text-secondary">{selectedSector?.sector || 'VIP'}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-on-surface-variant font-medium">Cantidad</span>
-                  <span className="font-bold text-white">{selectedQuantity || 1} x ${total.toLocaleString('es-AR')}</span>
+                <div className="flex flex-col gap-2">
+                  {(event && Object.keys(selectedSectors || {}).length > 0) ? (
+                    (event.sectors || []).filter((s: EventSector) => (selectedSectors[s.id] || 0) > 0).map((s: EventSector) => (
+                      <div key={s.id} className="flex justify-between items-center text-sm">
+                        <span className="text-on-surface-variant">{s.sector} • {selectedSectors[s.id]} x $ {parseInt(s.price).toLocaleString('es-AR')}</span>
+                        <span className="font-bold text-white">$ {(selectedSectors[s.id] * parseInt(s.price)).toLocaleString('es-AR')}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-on-surface-variant font-medium">Sector</span>
+                      <span className="font-bold text-secondary">{selectedSector?.sector || '—'}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-on-surface-variant font-medium">Service Charge</span>
                   <span className="font-bold text-white">${serviceCharge.toLocaleString('es-AR')}</span>
                 </div>
-                
+
                 <div className="pt-4 border-t border-white/5 flex justify-between items-end">
                   <span className="font-display font-extrabold text-xl text-white uppercase tracking-tighter">Total</span>
                   <span className="font-display font-extrabold text-2xl text-primary-fixed">${finalTotal.toLocaleString('es-AR')}</span>
                 </div>
               </div>
-              
+
               <button 
-                onClick={handleContinue}
-                className="w-full py-4 bg-primary-fixed text-black font-display font-extrabold rounded-sm uppercase tracking-widest text-xs primary-glow transition-all active:scale-95"
+                onClick={() => router.push('/checkout/payment')}
+                disabled={totalQty === 0}
+                className={`w-full py-4 font-display font-extrabold rounded-sm uppercase tracking-widest text-xs primary-glow transition-all active:scale-95 ${totalQty === 0 ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary-fixed text-black'}`}
               >
                 Continuar a Pago
               </button>

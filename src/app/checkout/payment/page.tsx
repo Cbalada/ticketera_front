@@ -1,17 +1,40 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { useReservationStore } from '@/store/reservationStore';
+import { useQuery } from '@tanstack/react-query';
+import { getEvent } from '@/lib/eventsService';
+import type { EventSector } from '@/types';
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { selectedSector, selectedQuantity } = useReservationStore();
+  const { selectedSector, selectedQuantity, selectedSectors, selectedEventId } = useReservationStore();
   const [showModal, setShowModal] = useState(false);
 
-  const total = selectedSector ? parseInt(selectedSector.price) * selectedQuantity : 0;
+  const { data: event } = useQuery(
+    { queryKey: ['event', selectedEventId], queryFn: () => (selectedEventId ? getEvent(selectedEventId) : Promise.resolve(null as any)), enabled: !!selectedEventId }
+  );
+
+  const total = useMemo(() => {
+    if (event && selectedSectors && Object.keys(selectedSectors).length > 0) {
+      return event.sectors.reduce((acc: number, s: EventSector) => {
+        const qty = selectedSectors[s.id] || 0;
+        return acc + qty * parseInt(s.price);
+      }, 0);
+    }
+    return selectedSector ? parseInt(selectedSector.price) * selectedQuantity : 0;
+  }, [event, selectedSectors, selectedSector, selectedQuantity]);
+
+  const totalQty = useMemo(() => {
+    if (selectedSectors && Object.keys(selectedSectors).length > 0) {
+      return Object.values(selectedSectors).reduce((a, b) => a + b, 0);
+    }
+    return selectedQuantity || 0;
+  }, [selectedSectors, selectedQuantity]);
+
   const serviceCharge = total * 0.15;
   const finalTotal = total + serviceCharge;
 
@@ -43,9 +66,26 @@ export default function PaymentPage() {
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Sector y número de butaca seleccionado</label>
-                <div className="w-full bg-surface-container-low border border-white/5 rounded-xl px-4 py-3 text-on-surface flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary-fixed text-sm">event_seat</span>
-                  <span className="font-medium">Sector: {selectedSector?.sector || 'Platea VIP'}, Entradas: {selectedQuantity || 1}</span>
+                <div className="w-full bg-surface-container-low border border-white/5 rounded-xl px-4 py-3 text-on-surface flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary-fixed text-sm">event_seat</span>
+                    <span className="font-medium">Resumen de selección</span>
+                  </div>
+                  <div className="flex flex-col">
+                    {event && Object.keys(selectedSectors || {}).length > 0 ? (
+                      (event.sectors || []).filter((s: EventSector) => (selectedSectors[s.id] || 0) > 0).map((s: EventSector) => (
+                          <div key={s.id} className="flex justify-between items-center text-sm">
+                            <span className="font-medium">{s.sector} • {selectedSectors[s.id]} x ${parseInt(s.price).toLocaleString('es-AR')}</span>
+                            <span className="font-bold">${(selectedSectors[s.id] * parseInt(s.price)).toLocaleString('es-AR')}</span>
+                          </div>
+                        ))
+                    ) : (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-medium">Sector: {selectedSector?.sector || 'Platea VIP'}</span>
+                        <span className="font-medium">Entradas: {selectedQuantity || 1}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -105,10 +145,23 @@ export default function PaymentPage() {
                   <div className="bg-primary-fixed text-black px-2 py-0.5 rounded text-[10px] font-black pulse-dot">LIVE</div>
                 </div>
                 
-                <div className="flex justify-between text-on-surface-variant text-sm font-medium">
-                  <span>{selectedQuantity || 1}x Entrada {selectedSector?.sector || 'General'}</span>
-                  <span>${total.toLocaleString('es-AR')}</span>
-                </div>
+                {event && Object.keys(selectedSectors || {}).length > 0 ? (
+                  <>
+                    {(event.sectors || []).filter((s: EventSector) => (selectedSectors[s.id] || 0) > 0).map((s: EventSector) => (
+                      <div key={s.id} className="flex justify-between text-on-surface-variant text-sm font-medium">
+                        <span>{selectedSectors[s.id]}x Entrada {s.sector}</span>
+                        <span>${(selectedSectors[s.id] * parseInt(s.price)).toLocaleString('es-AR')}</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-on-surface-variant text-sm font-medium">
+                      <span>{selectedQuantity || 1}x Entrada {selectedSector?.sector || 'General'}</span>
+                      <span>${total.toLocaleString('es-AR')}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-on-surface-variant text-sm font-medium">
                   <span>Service Charge</span>
                   <span>${serviceCharge.toLocaleString('es-AR')}</span>

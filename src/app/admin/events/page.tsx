@@ -225,7 +225,14 @@ export default function AdminEventsPage() {
 
               <div className="flex gap-3 justify-end">
                 <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded bg-white/5">Cancelar</button>
-                <button onClick={handleSubmit} disabled={createMutation.isLoading || updateMutation.isLoading} className="px-4 py-2 rounded bg-primary-fixed text-black font-bold">{createMutation.isLoading || updateMutation.isLoading ? 'Guardando...' : editMode ? 'Actualizar' : 'Crear'}</button>
+                {(() => {
+                  const creating = (createMutation as any).isLoading ?? createMutation.status === 'pending';
+                  const updating = (updateMutation as any).isLoading ?? updateMutation.status === 'pending';
+                  const busy = creating || updating;
+                  return (
+                    <button onClick={handleSubmit} disabled={busy} className="px-4 py-2 rounded bg-primary-fixed text-black font-bold">{busy ? 'Guardando...' : editMode ? 'Actualizar' : 'Crear'}</button>
+                  );
+                })()}
               </div>
             </div>
           </div>
