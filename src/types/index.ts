@@ -38,7 +38,7 @@ export interface Reservation {
   userId: number;
   eventSectorId: number;
   quantity: number;
-  status: 'PENDING' | 'CONFIRMED' | 'EXPIRED';
+  status: 'PENDING' | 'PURCHASED' | 'EXPIRED';
   expiresAt: string;
   createdAt: string;
   eventSector?: EventSector;

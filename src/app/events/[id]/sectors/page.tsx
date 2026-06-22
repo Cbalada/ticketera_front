@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
+import { useAuthStore } from '@/store/authStore';
 import { useReservationStore } from '@/store/reservationStore';
 import { useEvent } from '@/hooks/useEvent';
+import { useEventStockSync } from '@/hooks/useEventStockSync';
+import { createReservation } from '@/lib/reservationsService';
+import { parseApiError } from '@/lib/apiError';
 import type { EventSector, Sector } from '@/types';
 
 function formatEventDateTime(iso?: string) {
@@ -40,9 +44,15 @@ export default function SectorsPage() {
   const eventId = Array.isArray(rawId) ? rawId[0] : rawId;
 
   const [expandedSector, setExpandedSector] = useState<number | null>(null);
-  const { selectedSectors, setSectorQuantity, setSelectedEventId, clearSelectedSectors } = useReservationStore();
+  const [isReserving, setIsReserving] = useState(false);
+  const [reserveError, setReserveError] = useState<string | null>(null);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { selectedSectors, setSectorQuantity, setSelectedEventId, clearSelectedSectors, setReservations } =
+    useReservationStore();
 
   const { data: event, isLoading, isError, error, refetch } = useEvent(eventId);
+
+  useEventStockSync(eventId);
 
   useEffect(() => {
     if (eventId) {
@@ -50,6 +60,16 @@ export default function SectorsPage() {
       clearSelectedSectors();
     }
   }, [eventId, setSelectedEventId, clearSelectedSectors]);
+
+  useEffect(() => {
+    if (!event) return;
+    event.sectors.forEach((sector) => {
+      const qty = selectedSectors[sector.id] ?? 0;
+      if (qty > sector.availableQuantity) {
+        setSectorQuantity(sector.id, sector.availableQuantity);
+      }
+    });
+  }, [event, selectedSectors, setSectorQuantity]);
 
   const getSectorByType = (type: Sector) => event?.sectors.find((s) => s.sector === type);
 
@@ -82,10 +102,35 @@ export default function SectorsPage() {
     );
   }, [event, selectedSectors]);
 
-  const handleContinue = () => {
-    if (totalTickets > 0 && eventId) {
+  const handleContinue = async () => {
+    if (totalTickets === 0 || !eventId || !event) return;
+
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/events/${eventId}/sectors`);
+      return;
+    }
+
+    setIsReserving(true);
+    setReserveError(null);
+
+    try {
+      const entries = event.sectors
+        .map((sector) => ({ sector, qty: selectedSectors[sector.id] ?? 0 }))
+        .filter(({ qty }) => qty > 0);
+
+      const created = await Promise.all(
+        entries.map(({ sector, qty }) =>
+          createReservation({ eventSectorId: sector.id, quantity: qty })
+        )
+      );
+
       setSelectedEventId(eventId);
+      setReservations(created);
       router.push('/checkout/payment');
+    } catch (err) {
+      setReserveError(parseApiError(err, 'No se pudo crear la reserva. Verificá la disponibilidad e intentá de nuevo.'));
+    } finally {
+      setIsReserving(false);
     }
   };
 
@@ -318,6 +363,9 @@ export default function SectorsPage() {
 
               {/* Checkout Button Area */}
               <div className="mt-10 pt-6 border-t border-white/10">
+                {reserveError && (
+                  <p className="mb-4 text-sm text-red-400">{reserveError}</p>
+                )}
                 <div className="flex justify-between items-end mb-6 gap-4">
                   <span className="font-body-md text-body-md text-on-surface-variant">
                     Total ({totalTickets} entrada{totalTickets !== 1 ? 's' : ''})
@@ -327,11 +375,11 @@ export default function SectorsPage() {
                   </span>
                 </div>
                 <button 
-                  disabled={totalTickets === 0}
+                  disabled={totalTickets === 0 || isReserving}
                   onClick={handleContinue}
-                  className={`w-full font-bold py-5 rounded-xl text-label-md uppercase tracking-[0.2em] transition-all ${totalTickets === 0 ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary-fixed hover:bg-primary-container text-on-primary-fixed active:scale-95 primary-glow'}`}
+                  className={`w-full font-bold py-5 rounded-xl text-label-md uppercase tracking-[0.2em] transition-all ${totalTickets === 0 || isReserving ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary-fixed hover:bg-primary-container text-on-primary-fixed active:scale-95 primary-glow'}`}
                 >
-                  Continuar Compra
+                  {isReserving ? 'Reservando...' : 'Continuar Compra'}
                 </button>
               </div>
             </div>

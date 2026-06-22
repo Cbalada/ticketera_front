@@ -1,51 +1,150 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { useReservationStore } from '@/store/reservationStore';
-import { useQuery } from '@tanstack/react-query';
-import { getEvent } from '@/lib/eventsService';
-import type { EventSector } from '@/types';
+import { usePurchaseStore } from '@/store/purchaseStore';
+import { useEvent } from '@/hooks/useEvent';
+import { useEventSubscription } from '@/hooks/useEventSubscription';
+import { createPurchase } from '@/lib/purchasesService';
+import { parseApiError } from '@/lib/apiError';
+import type { EventSector, Reservation } from '@/types';
+
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function getSectorPrice(event: { sectors: EventSector[] } | undefined, reservation: Reservation) {
+  const sector =
+    reservation.eventSector ??
+    event?.sectors.find((s) => s.id === reservation.eventSectorId);
+  return sector ? parseInt(sector.price, 10) : 0;
+}
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { selectedSector, selectedQuantity, selectedSectors, selectedEventId } = useReservationStore();
-  const [showModal, setShowModal] = useState(false);
+  const {
+    reservations,
+    selectedEventId,
+    expiresAt,
+    clearStore,
+  } = useReservationStore();
+  const { setCurrentPurchase } = usePurchaseStore();
 
-  const { data: event } = useQuery(
-    { queryKey: ['event', selectedEventId], queryFn: () => (selectedEventId ? getEvent(selectedEventId) : Promise.resolve(null as any)), enabled: !!selectedEventId }
+  const [showModal, setShowModal] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
+
+  const { data: event } = useEvent(selectedEventId ?? undefined);
+
+  const reservationIds = useMemo(
+    () => new Set(reservations.map((r) => r.id)),
+    [reservations]
   );
 
-  const total = useMemo(() => {
-    if (event && selectedSectors && Object.keys(selectedSectors).length > 0) {
-      return event.sectors.reduce((acc: number, s: EventSector) => {
-        const qty = selectedSectors[s.id] || 0;
-        return acc + qty * parseInt(s.price);
-      }, 0);
-    }
-    return selectedSector ? parseInt(selectedSector.price) * selectedQuantity : 0;
-  }, [event, selectedSectors, selectedSector, selectedQuantity]);
+  const handleReservationExpired = useCallback(
+    (payload: { reservationId: number }) => {
+      if (reservationIds.has(payload.reservationId)) {
+        clearStore();
+        router.push('/checkout/timeout');
+      }
+    },
+    [reservationIds, clearStore, router]
+  );
 
-  const totalQty = useMemo(() => {
-    if (selectedSectors && Object.keys(selectedSectors).length > 0) {
-      return Object.values(selectedSectors).reduce((a, b) => a + b, 0);
+  useEventSubscription(selectedEventId ?? undefined, {
+    onReservationExpired: handleReservationExpired,
+  });
+
+  useEffect(() => {
+    if (reservations.length === 0) {
+      router.replace(selectedEventId ? `/events/${selectedEventId}/sectors` : '/events');
     }
-    return selectedQuantity || 0;
-  }, [selectedSectors, selectedQuantity]);
+  }, [reservations.length, selectedEventId, router]);
+
+  useEffect(() => {
+    if (!expiresAt) {
+      setRemainingMs(null);
+      return;
+    }
+
+    const tick = () => {
+      const ms = new Date(expiresAt).getTime() - Date.now();
+      if (ms <= 0) {
+        clearStore();
+        router.push('/checkout/timeout');
+        return;
+      }
+      setRemainingMs(ms);
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt, clearStore, router]);
+
+  const lineItems = useMemo(() => {
+    return reservations.map((reservation) => {
+      const price = getSectorPrice(event, reservation);
+      const sector =
+        reservation.eventSector ??
+        event?.sectors.find((s) => s.id === reservation.eventSectorId);
+      return {
+        reservation,
+        sectorName: sector?.sector ?? 'Sector',
+        unitPrice: price,
+        subtotal: price * reservation.quantity,
+      };
+    });
+  }, [reservations, event]);
+
+  const total = useMemo(
+    () => lineItems.reduce((acc, item) => acc + item.subtotal, 0),
+    [lineItems]
+  );
+
+  const totalQty = useMemo(
+    () => reservations.reduce((acc, r) => acc + r.quantity, 0),
+    [reservations]
+  );
 
   const serviceCharge = total * 0.15;
   const finalTotal = total + serviceCharge;
 
-  const handlePay = () => {
-    setShowModal(true);
+  const handlePay = async () => {
+    if (reservations.length === 0 || isPaying) return;
+
+    setIsPaying(true);
+    setPayError(null);
+
+    try {
+      const purchases = await Promise.all(
+        reservations.map((r) => createPurchase({ reservationId: r.id }))
+      );
+      setCurrentPurchase(purchases[purchases.length - 1]);
+      setShowModal(true);
+    } catch (err) {
+      setPayError(parseApiError(err, 'No se pudo completar el pago. Intentá de nuevo.'));
+    } finally {
+      setIsPaying(false);
+    }
   };
 
   const handleSuccessClose = () => {
     setShowModal(false);
+    clearStore();
     router.push('/profile');
   };
+
+  if (reservations.length === 0) {
+    return null;
+  }
 
   return (
     <>
@@ -61,7 +160,13 @@ export default function PaymentPage() {
               <span className="material-symbols-outlined">arrow_back</span>
               <span className="text-[11px] font-bold uppercase tracking-widest">VOLVER</span>
             </button>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-8">Pago con Tarjeta</h1>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-4">Pago con Tarjeta</h1>
+            {remainingMs !== null && (
+              <p className="mb-8 text-on-surface-variant text-sm">
+                Tiempo restante para completar la compra:{' '}
+                <span className="text-primary-fixed font-bold">{formatCountdown(remainingMs)}</span>
+              </p>
+            )}
             
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div className="space-y-2">
@@ -72,19 +177,14 @@ export default function PaymentPage() {
                     <span className="font-medium">Resumen de selección</span>
                   </div>
                   <div className="flex flex-col">
-                    {event && Object.keys(selectedSectors || {}).length > 0 ? (
-                      (event.sectors || []).filter((s: EventSector) => (selectedSectors[s.id] || 0) > 0).map((s: EventSector) => (
-                          <div key={s.id} className="flex justify-between items-center text-sm">
-                            <span className="font-medium">{s.sector} • {selectedSectors[s.id]} x ${parseInt(s.price).toLocaleString('es-AR')}</span>
-                            <span className="font-bold">${(selectedSectors[s.id] * parseInt(s.price)).toLocaleString('es-AR')}</span>
-                          </div>
-                        ))
-                    ) : (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="font-medium">Sector: {selectedSector?.sector || 'Platea VIP'}</span>
-                        <span className="font-medium">Entradas: {selectedQuantity || 1}</span>
+                    {lineItems.map((item) => (
+                      <div key={item.reservation.id} className="flex justify-between items-center text-sm">
+                        <span className="font-medium">
+                          {item.sectorName} • {item.reservation.quantity} x ${item.unitPrice.toLocaleString('es-AR')}
+                        </span>
+                        <span className="font-bold">${item.subtotal.toLocaleString('es-AR')}</span>
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               </div>
@@ -114,15 +214,22 @@ export default function PaymentPage() {
                   </div>
                 </div>
               </div>
+
+              {payError && (
+                <p className="text-sm text-red-400">{payError}</p>
+              )}
               
               <div className="flex pt-4">
                 <button 
                   type="button"
                   onClick={handlePay}
-                  className="w-full md:w-auto bg-primary-fixed text-black px-12 py-4 rounded-sm font-extrabold text-sm uppercase tracking-widest primary-glow transition-all flex items-center justify-center gap-3 active:scale-95"
+                  disabled={isPaying || totalQty === 0}
+                  className={`w-full md:w-auto px-12 py-4 rounded-sm font-extrabold text-sm uppercase tracking-widest primary-glow transition-all flex items-center justify-center gap-3 active:scale-95 ${isPaying || totalQty === 0 ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary-fixed text-black'}`}
                 >
-                  Pagar
-                  <span className="material-symbols-outlined font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+                  {isPaying ? 'Procesando...' : 'Pagar'}
+                  {!isPaying && (
+                    <span className="material-symbols-outlined font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -133,35 +240,36 @@ export default function PaymentPage() {
             <div className="glass-panel rounded-xl p-6 sticky top-24">
               <h2 className="text-xl font-bold mb-6 border-b border-white/5 pb-4 text-white">Resumen de Compra</h2>
               <div className="mb-6 rounded-lg overflow-hidden aspect-[16/9]">
-                <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPJ8PQMEgvw_r0nRcAXb7I3GBjcPZ661Wun8nzhhMa0IiNFCHPKpQmkKyUepTRumUgp6PNlJ0u8wZSbYpn8ihX8v_SrNsV_ZOENX-M5Kk8o3bhmqrQQgTablX2B1P0JRBCM97vunCPLDCFhtKNijbMopOI1DcpPbT6EOZyftsgGLSb2OnK7ZR_kHCtWHmcnG_e_yXgerQDrSER2lBMHqnpeaWRw1dlcyQKPITacGv09xKyt6bYXrbRkmHVJcUjnO-9durUSL4eLPg" />
+                <img
+                  className="w-full h-full object-cover"
+                  src={event?.imageUrl ?? 'https://lh3.googleusercontent.com/aida-public/AB6AXuCPJ8PQMEgvw_r0nRcAXb7I3GBjcPZ661Wun8nzhhMa0IiNFCHPKpQmkKyUepTRumUgp6PNlJ0u8wZSbYpn8ihX8v_SrNsV_ZOENX-M5Kk8o3bhmqrQQgTablX2B1P0JRBCM97vunCPLDCFhtKNijbMopOI1DcpPbT6EOZyftsgGLSb2OnK7ZR_kHCtWHmcnG_e_yXgerQDrSER2lBMHqnpeaWRw1dlcyQKPITacGv09xKyt6bYXrbRkmHVJcUjnO-9durUSL4eLPg'}
+                  alt={event?.title ?? 'Evento'}
+                />
               </div>
               
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold text-white">Pulse Evolution Tour</h4>
-                    <p className="text-on-surface-variant text-xs">Estadio Monumental, Buenos Aires</p>
+                    <h4 className="font-bold text-white">{event?.title ?? 'Evento'}</h4>
+                    <p className="text-on-surface-variant text-xs">
+                      {event?.date
+                        ? new Intl.DateTimeFormat('es-AR', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          }).format(new Date(event.date))
+                        : '—'}
+                    </p>
                   </div>
                   <div className="bg-primary-fixed text-black px-2 py-0.5 rounded text-[10px] font-black pulse-dot">LIVE</div>
                 </div>
                 
-                {event && Object.keys(selectedSectors || {}).length > 0 ? (
-                  <>
-                    {(event.sectors || []).filter((s: EventSector) => (selectedSectors[s.id] || 0) > 0).map((s: EventSector) => (
-                      <div key={s.id} className="flex justify-between text-on-surface-variant text-sm font-medium">
-                        <span>{selectedSectors[s.id]}x Entrada {s.sector}</span>
-                        <span>${(selectedSectors[s.id] * parseInt(s.price)).toLocaleString('es-AR')}</span>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-between text-on-surface-variant text-sm font-medium">
-                      <span>{selectedQuantity || 1}x Entrada {selectedSector?.sector || 'General'}</span>
-                      <span>${total.toLocaleString('es-AR')}</span>
-                    </div>
-                  </>
-                )}
+                {lineItems.map((item) => (
+                  <div key={item.reservation.id} className="flex justify-between text-on-surface-variant text-sm font-medium">
+                    <span>{item.reservation.quantity}x Entrada {item.sectorName}</span>
+                    <span>${item.subtotal.toLocaleString('es-AR')}</span>
+                  </div>
+                ))}
                 <div className="flex justify-between text-on-surface-variant text-sm font-medium">
                   <span>Service Charge</span>
                   <span>${serviceCharge.toLocaleString('es-AR')}</span>
@@ -196,7 +304,10 @@ export default function PaymentPage() {
                   Ver Mis Tickets
                 </button>
                 <button 
-                  onClick={() => router.push('/')}
+                  onClick={() => {
+                    clearStore();
+                    router.push('/');
+                  }}
                   className="w-full text-on-surface-variant font-bold text-[10px] uppercase tracking-[0.2em] hover:text-primary-fixed transition-colors"
                 >
                   Volver al Inicio

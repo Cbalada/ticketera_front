@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { useAuthStore } from '@/store/authStore';
-import { getEvent } from '@/lib/eventsService';
-import { Event } from '@/types';
+import { useEvent } from '@/hooks/useEvent';
+import { useEventStockSync } from '@/hooks/useEventStockSync';
+import { parseApiError } from '@/lib/apiError';
 
 export default function EventDetailsPage() {
   const router = useRouter();
@@ -17,9 +18,9 @@ export default function EventDetailsPage() {
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: event, isLoading, isError, error, refetch } = useEvent(eventId);
+
+  useEventStockSync(eventId);
 
   const handlePurchaseClick = () => {
     if (!isAuthenticated) {
@@ -29,50 +30,8 @@ export default function EventDetailsPage() {
     }
   };
 
-  useEffect(() => {
-    let mounted = true;
-    if (!eventId) return;
-
-    const controller = new AbortController();
-
-    setLoading(true);
-    setError(null);
-    setEvent(null);
-
-    getEvent(eventId, { signal: controller.signal })
-      .then((res) => {
-        if (!mounted) return;
-        setEvent(res);
-      })
-      .catch((err: any) => {
-        if (!mounted) return;
-        console.error('Error fetching event', err);
-        let msg = 'Error cargando evento.';
-        if (err) {
-          if (typeof err === 'string') msg = err;
-          else if (Array.isArray(err?.message)) msg = err.message.join(', ');
-          else if (err?.message) msg = err.message;
-          else if (err?.error) msg = err.error;
-          else try { msg = JSON.stringify(err); } catch {}
-        }
-        if (err?.statusCode === 404 || (typeof err === 'string' && err.includes('404'))) {
-          msg = 'Evento no encontrado.';
-        }
-        setError(msg || 'Evento no encontrado.');
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
-      controller.abort();
-    };
-  }, [eventId]);
-
   // Loading skeleton
-  if (loading) {
+  if (isLoading) {
     return (
       <>
         <Navbar />
@@ -117,17 +76,18 @@ export default function EventDetailsPage() {
   }
 
   // Error state
-  if (error) {
+  if (isError) {
+    const errorMessage = parseApiError(error, 'Error cargando evento.');
     return (
       <>
         <Navbar />
         <main className="pt-32 pb-24 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
           <div className="max-w-3xl mx-auto text-center py-24">
             <h2 className="font-display text-headline-lg mb-4">No se pudo cargar el evento</h2>
-            <p className="text-on-surface-variant mb-6">{error}</p>
+            <p className="text-on-surface-variant mb-6">{errorMessage}</p>
             <div className="flex justify-center gap-4">
               <Link href="/events" className="px-6 py-3 rounded-lg border border-white/10">Volver a Shows</Link>
-              <button onClick={() => router.refresh()} className="px-6 py-3 rounded-lg bg-primary-fixed text-on-primary">Reintentar</button>
+              <button onClick={() => refetch()} className="px-6 py-3 rounded-lg bg-primary-fixed text-on-primary">Reintentar</button>
             </div>
           </div>
         </main>
@@ -175,6 +135,7 @@ export default function EventDetailsPage() {
 
   const eventDateFormatted = formatDateSpanish(event.date);
   const eventTimeFormatted = formatTime(event.date) + ' hs';
+  const totalAvailable = event.sectors.reduce((sum, s) => sum + s.availableQuantity, 0);
 
   return (
     <>
@@ -244,7 +205,7 @@ export default function EventDetailsPage() {
               </button>
               <div className="flex items-center justify-center space-x-2 text-on-surface-variant font-body-md py-2">
                 <div className="w-2 h-2 rounded-full bg-primary-fixed animate-pulse"></div>
-                <span>¡Se agotan! Solo quedan 42 entradas.</span>
+                <span>¡Se agotan! Solo quedan {totalAvailable} entradas.</span>
               </div>
             </div>
 
