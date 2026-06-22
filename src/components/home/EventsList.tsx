@@ -42,60 +42,49 @@ export default function EventsList() {
     };
   }, [socket, qc]);
 
-  if (isLoading) {
-    return <div>Cargando eventos...</div>;
-  }
+  if (isLoading) return <div>Cargando eventos...</div>;
 
-  if (!Array.isArray(events) || events.length === 0) {
-    return <div>No hay eventos disponibles.</div>;
+  if (!Array.isArray(events) || events.length === 0) return <div>No hay eventos disponibles.</div>;
+
+  function formatDateTime(iso?: string) {
+    if (!iso) return { date: '-', time: '-' };
+    try {
+      const d = new Date(iso);
+      return {
+        date: d.toLocaleDateString(),
+        time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+    } catch {
+      return { date: iso, time: '' };
+    }
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-      {events.map((event: Event, idx: number) => {
-        // Render first as featured card, others as secondary for layout parity
-        if (idx === 0) {
-          return (
-            <Link key={event.id} href={`/events/${event.id}`} className="md:col-span-8 relative rounded-xl overflow-hidden group h-[400px]">
-              <Image
-                src={event.imageUrl}
-                alt={event.title}
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-110"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-              <div className="absolute bottom-0 left-0 p-8 w-full glass-panel border-0 bg-black/40">
-                <div className="flex justify-between items-end">
-                  <div>
-                    <span className="text-primary-fixed font-label-md bg-primary-fixed/20 px-3 py-1 rounded-full mb-3 inline-block">EVENTO</span>
-                    <h3 className="font-display text-headline-lg uppercase mb-1">{event.title}</h3>
-                    <p className="text-on-surface/80 flex items-center">
-                      <span className="material-symbols-outlined text-sm mr-2">calendar_today</span>
-                      {formatDate(event.date)}
-                    </p>
-                  </div>
-                  <div className="bg-primary-fixed text-on-primary-fixed p-4 rounded-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95 shadow-lg">
-                    <span className="material-symbols-outlined">confirmation_number</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          );
-        }
-
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {events.map((event: Event) => {
+        const dt = formatDateTime(event.date);
         return (
-          <Link key={event.id} href={`/events/${event.id}`} className="md:col-span-4 relative rounded-xl overflow-hidden group h-[400px]">
-            <Image
-              src={event.imageUrl}
-              alt={event.title}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-0 left-0 p-6 w-full">
-              <h4 className="font-display text-headline-md uppercase">{event.title}</h4>
-              <p className="text-on-surface/80 text-sm">{formatDate(event.date)}</p>
+          <Link key={event.id} href={`/events/${event.id}`} className="block rounded-xl overflow-hidden group bg-surface-container">
+            <div className="relative w-full aspect-[3/2] bg-gray-800">
+              <Image
+                src={event.imageUrl || '/images/event-placeholder.svg'}
+                alt={event.title || 'Evento'}
+                fill
+                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+            <div className="p-4">
+              <h3 className="font-display text-headline-md mb-1 line-clamp-2">{event.title}</h3>
+              <div className="text-on-surface-variant text-sm flex items-center gap-3">
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                  <span>{dt.date}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">schedule</span>
+                  <span>{dt.time}</span>
+                </span>
+              </div>
             </div>
           </Link>
         );

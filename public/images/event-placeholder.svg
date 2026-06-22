@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g)"/>
+  <g fill="#9aa6b2" font-family="Arial, Helvetica, sans-serif" font-weight="700">
+    <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-size="48">Imagen no disponible</text>
+    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="28">Evento sin imagen</text>
+  </g>
+</svg>

@@ -1,20 +1,41 @@
 "use client";
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { registerSchema, type RegisterFormValues } from '@/features/auth/schemas';
+import { fetchClient } from '@/lib/fetchClient';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   });
 
+  const mutation = useMutation({
+    mutationFn: (data: RegisterFormValues) => fetchClient('/auth/register', { data, method: 'POST' }),
+    onSuccess: () => {
+      toast.success('Registro completado correctamente');
+      router.push('/login');
+    },
+    onError: (err: any) => {
+      const message = err?.message || err?.error || 'No se pudo completar el registro.';
+      setApiError(typeof message === 'string' ? message : JSON.stringify(message));
+      toast.error(typeof message === 'string' ? message : 'No se pudo completar el registro.');
+    },
+  });
+
   const onSubmit = (data: RegisterFormValues) => {
-    // Aquí conectaremos con el registro más adelante
-    console.log('Register Submit:', data);
+    setApiError(null);
+    if (!mutation.isLoading) mutation.mutate(data);
   };
 
   return (
@@ -74,8 +95,14 @@ export default function RegisterPage() {
                 {errors.password && <p className="text-error text-xs">{errors.password.message}</p>}
               </div>
               
-              <button className="mt-4 w-full bg-primary-fixed text-on-primary-fixed font-display font-bold py-4 rounded-lg active:scale-95 transition-all primary-glow" type="submit">
-                Crear cuenta
+              {apiError && <p className="text-error text-sm">{apiError}</p>}
+
+              <button
+                className="mt-4 w-full bg-primary-fixed text-on-primary-fixed font-display font-bold py-4 rounded-lg active:scale-95 transition-all primary-glow"
+                type="submit"
+                disabled={mutation.isLoading}
+              >
+                {mutation.isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
               </button>
             </form>
             

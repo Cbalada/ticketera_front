@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
 import EventsList from '@/components/home/EventsList';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -52,10 +53,10 @@ export default function Home() {
               <h2 className="font-display text-headline-lg mb-4">SHOWS RECOMENDADOS</h2>
               <p className="text-on-surface-variant font-body-lg">No te pierdas los eventos más calientes de la temporada.</p>
             </div>
-            <button className="text-primary-fixed font-label-md flex items-center space-x-2 group">
+            <Link href="/events" className="text-primary-fixed font-label-md flex items-center space-x-2 group">
               <span>VER TODOS</span>
               <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
-            </button>
+            </Link>
           </div>
 
           <EventsList />

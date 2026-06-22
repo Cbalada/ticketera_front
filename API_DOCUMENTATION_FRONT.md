@@ -8,7 +8,7 @@ Este documento replica el formato de `API_DOCUMENTATION.md` pero lista las rutas
 - **Login:** `/login` — página de inicio de sesión (dentro del grupo `(auth)`).
 - **Register:** `/register` — registro de usuarios (dentro del grupo `(auth)`).
 - **Eventos (lista/detalle):**
-  - `/events/[id]` — detalle de evento (parámetro dinámico `id`).
+  
   - `/events/[id]/sectors` — listado de sectores para el evento `id`.
 - **Checkout:**
   - `/checkout` — resumen/confirmación de compra.

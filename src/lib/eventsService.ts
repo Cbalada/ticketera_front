@@ -17,6 +17,10 @@ export const getEvents = async (): Promise<Event[]> => {
   return fetchClient<Event[]>('/events');
 };
 
+export const getEvent = async (id: string | number, options?: RequestInit): Promise<Event> => {
+  return fetchClient<Event>(`/events/${id}`, options);
+};
+
 export const createEvent = async (data: CreateEventDto): Promise<Event> => {
   return fetchClient<Event>('/events', { data });
 };
