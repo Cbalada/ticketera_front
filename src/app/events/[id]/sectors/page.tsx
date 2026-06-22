@@ -85,7 +85,7 @@ export default function SectorsPage() {
   const handleContinue = () => {
     if (totalTickets > 0 && eventId) {
       setSelectedEventId(eventId);
-      router.push('/checkout');
+      router.push('/checkout/payment');
     }
   };
 
