@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
+import HashScrollHandler from '@/components/common/HashScrollHandler';
 import EventsList from '@/components/home/EventsList';
 import Link from 'next/link';
 
@@ -7,6 +8,7 @@ export default function Home() {
   return (
     <>
       <Navbar />
+      <HashScrollHandler />
       <main>
         {/* Hero Section */}
         <section className="relative h-[90vh] flex items-center overflow-hidden">
@@ -63,7 +65,7 @@ export default function Home() {
         </section>
 
         {/* Experience Section */}
-        <section className="bg-surface-container-lowest py-32 relative overflow-hidden">
+        <section id="ticket-plus-experience" className="bg-surface-container-lowest py-32 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none"></div>
           <div className="px-margin-desktop max-w-container-max mx-auto relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">

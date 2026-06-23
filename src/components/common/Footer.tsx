@@ -1,6 +1,11 @@
+"use client";
+
 import Link from 'next/link';
+import useExperienceNavigation from '@/hooks/useExperienceNavigation';
 
 export function Footer() {
+  const navigateToExperience = useExperienceNavigation();
+ 
   return (
     <footer className="bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-white/10 w-full pt-20 pb-10">
       <div className="max-w-container-max mx-auto px-margin-desktop">
@@ -14,7 +19,7 @@ export function Footer() {
                 <ul className="space-y-4">
                     <li><Link href="/" className="text-on-surface-variant hover:text-primary-fixed transition-colors">Inicio</Link></li>
                     <li><Link href="/events" className="text-on-surface-variant hover:text-primary-fixed transition-colors">Shows</Link></li>
-                    <li><Link href="#" className="text-on-surface-variant hover:text-primary-fixed transition-colors">Experiencias</Link></li>
+                    <li><Link onClick={navigateToExperience} href="/#ticket-plus-experience" className="text-on-surface-variant hover:text-primary-fixed transition-colors">Experiencias</Link></li>
                 </ul>
             </div>
             <div className="md:col-span-4">

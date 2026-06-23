@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useExperienceNavigation from '@/hooks/useExperienceNavigation';
 import { useAuthStore } from '@/store/authStore';
 import { fetchClient } from '@/lib/fetchClient';
 
@@ -12,6 +13,7 @@ export function Navbar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [open, setOpen] = useState(false);
+  const navigateToExperience = useExperienceNavigation();
 
   const handleLogout = async () => {
     const confirmed = confirm('¿Estás seguro que quieres cerrar sesión?');
@@ -36,7 +38,7 @@ export function Navbar() {
         <nav className="hidden md:flex items-center space-x-8 md:absolute md:left-1/2 md:-translate-x-1/2">
           <Link className="text-primary-fixed font-bold border-b-2 border-primary-fixed pb-1" href="/">Inicio</Link>
           <Link className="text-on-surface-variant hover:text-primary transition-colors" href="/events">Shows</Link>
-          <Link className="text-on-surface-variant hover:text-primary transition-colors" href="#">Experiencias</Link>
+          <Link onClick={navigateToExperience} className="text-on-surface-variant hover:text-primary transition-colors" href="/#ticket-plus-experience">Experiencias</Link>
         </nav>
         <div className="flex items-center space-x-6">
           {!isAuthenticated ? (
@@ -67,6 +69,15 @@ export function Navbar() {
                       Panel de Eventos
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      router.push('/profile');
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-surface/5"
+                  >
+                    Historial de Compras
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 hover:bg-surface/5"
