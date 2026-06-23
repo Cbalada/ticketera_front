@@ -8,16 +8,11 @@ import { useReservationStore } from '@/store/reservationStore';
 import { usePurchaseStore } from '@/store/purchaseStore';
 import { useEvent } from '@/hooks/useEvent';
 import { useEventSubscription } from '@/hooks/useEventSubscription';
+import { useCheckoutCountdown } from '@/hooks/useCheckoutCountdown';
+import { CheckoutCountdown } from '@/components/checkout/CheckoutCountdown';
 import { createPurchase } from '@/lib/purchasesService';
 import { parseApiError } from '@/lib/apiError';
 import type { EventSector, Reservation } from '@/types';
-
-function formatCountdown(ms: number) {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
 
 function getSectorPrice(event: { sectors: EventSector[] } | undefined, reservation: Reservation) {
   const sector =
@@ -31,7 +26,6 @@ export default function PaymentPage() {
   const {
     reservations,
     selectedEventId,
-    expiresAt,
     clearStore,
   } = useReservationStore();
   const { setCurrentPurchase } = usePurchaseStore();
@@ -39,9 +33,9 @@ export default function PaymentPage() {
   const [showModal, setShowModal] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
-  const [remainingMs, setRemainingMs] = useState<number | null>(null);
 
   const { data: event } = useEvent(selectedEventId ?? undefined);
+  const { remainingMs } = useCheckoutCountdown();
 
   const reservationIds = useMemo(
     () => new Set(reservations.map((r) => r.id)),
@@ -67,27 +61,6 @@ export default function PaymentPage() {
       router.replace(selectedEventId ? `/events/${selectedEventId}/sectors` : '/events');
     }
   }, [reservations.length, selectedEventId, router]);
-
-  useEffect(() => {
-    if (!expiresAt) {
-      setRemainingMs(null);
-      return;
-    }
-
-    const tick = () => {
-      const ms = new Date(expiresAt).getTime() - Date.now();
-      if (ms <= 0) {
-        clearStore();
-        router.push('/checkout/timeout');
-        return;
-      }
-      setRemainingMs(ms);
-    };
-
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAt, clearStore, router]);
 
   const lineItems = useMemo(() => {
     return reservations.map((reservation) => {
@@ -161,12 +134,7 @@ export default function PaymentPage() {
               <span className="text-[11px] font-bold uppercase tracking-widest">VOLVER</span>
             </button>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-4">Pago con Tarjeta</h1>
-            {remainingMs !== null && (
-              <p className="mb-8 text-on-surface-variant text-sm">
-                Tiempo restante para completar la compra:{' '}
-                <span className="text-primary-fixed font-bold">{formatCountdown(remainingMs)}</span>
-              </p>
-            )}
+            <CheckoutCountdown remainingMs={remainingMs} className="mb-8" />
             
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div className="space-y-2">

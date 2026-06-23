@@ -9,6 +9,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useReservationStore } from '@/store/reservationStore';
 import { useEvent } from '@/hooks/useEvent';
 import { useEventStockSync } from '@/hooks/useEventStockSync';
+import { useCheckoutCountdown } from '@/hooks/useCheckoutCountdown';
+import { CheckoutCountdown } from '@/components/checkout/CheckoutCountdown';
 import { createReservation } from '@/lib/reservationsService';
 import { parseApiError } from '@/lib/apiError';
 import type { EventSector, Sector } from '@/types';
@@ -47,19 +49,20 @@ export default function SectorsPage() {
   const [isReserving, setIsReserving] = useState(false);
   const [reserveError, setReserveError] = useState<string | null>(null);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { selectedSectors, setSectorQuantity, setSelectedEventId, clearSelectedSectors, setReservations } =
+  const { selectedSectors, setSectorQuantity, setSelectedEventId, clearSelectedSectors, setReservations, startCheckoutTimer, clearStore, expiresAt } =
     useReservationStore();
 
   const { data: event, isLoading, isError, error, refetch } = useEvent(eventId);
+  const { remainingMs } = useCheckoutCountdown();
 
   useEventStockSync(eventId);
 
   useEffect(() => {
-    if (eventId) {
-      setSelectedEventId(eventId);
-      clearSelectedSectors();
-    }
-  }, [eventId, setSelectedEventId, clearSelectedSectors]);
+    if (!eventId) return;
+    setSelectedEventId(eventId);
+    clearSelectedSectors();
+    startCheckoutTimer();
+  }, [eventId, setSelectedEventId, clearSelectedSectors, startCheckoutTimer]);
 
   useEffect(() => {
     if (!event) return;
@@ -104,6 +107,12 @@ export default function SectorsPage() {
 
   const handleContinue = async () => {
     if (totalTickets === 0 || !eventId || !event) return;
+
+    if (expiresAt && new Date(expiresAt) <= new Date()) {
+      clearStore();
+      router.push('/checkout/timeout');
+      return;
+    }
 
     if (!isAuthenticated) {
       router.push(`/login?redirect=/events/${eventId}/sectors`);
@@ -220,10 +229,11 @@ export default function SectorsPage() {
       <main className="max-w-container-max mx-auto px-margin-desktop py-12">
         <div className="mb-10">
           <h1 className="font-display text-headline-lg text-white mb-2 uppercase tracking-tight">{event.title}</h1>
-          <div className="flex items-center gap-3 text-on-surface-variant">
+          <div className="flex items-center gap-3 text-on-surface-variant mb-4">
             <span className="material-symbols-outlined text-primary-fixed-dim">calendar_today</span>
             <p className="font-body-md text-body-md">{formatEventDateTime(event.date)}</p>
           </div>
+          <CheckoutCountdown remainingMs={remainingMs} />
         </div>
 
         <div className="grid grid-cols-12 gap-gutter">

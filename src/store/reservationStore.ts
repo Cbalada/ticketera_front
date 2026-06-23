@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { CHECKOUT_TTL_MS } from '@/lib/checkoutConstants';
 import type { Reservation, EventSector } from '@/types';
 
 interface ReservationState {
@@ -16,7 +17,16 @@ interface ReservationState {
   clearSelectedSectors: () => void;
   setReservation: (reservation: Reservation | null) => void;
   setReservations: (reservations: Reservation[]) => void;
+  startCheckoutTimer: () => void;
   clearStore: () => void;
+}
+
+function pickEarliestExpiresAt(...candidates: (string | null | undefined)[]): string | null {
+  const valid = candidates.filter((c): c is string => !!c);
+  if (valid.length === 0) return null;
+  return valid.reduce((earliest, current) =>
+    new Date(current) < new Date(earliest) ? current : earliest
+  );
 }
 
 function earliestExpiresAt(reservations: Reservation[]): string | null {
@@ -48,10 +58,19 @@ export const useReservationStore = create<ReservationState>()((set) => ({
       expiresAt: reservation?.expiresAt || null,
     }),
   setReservations: (reservations) =>
-    set({
+    set((state) => ({
       reservations,
       reservation: reservations[0] ?? null,
-      expiresAt: earliestExpiresAt(reservations),
+      expiresAt: pickEarliestExpiresAt(state.expiresAt, earliestExpiresAt(reservations)),
+    })),
+  startCheckoutTimer: () =>
+    set((state) => {
+      if (state.expiresAt && new Date(state.expiresAt) > new Date()) {
+        return state;
+      }
+      return {
+        expiresAt: new Date(Date.now() + CHECKOUT_TTL_MS).toISOString(),
+      };
     }),
   clearStore: () =>
     set({
