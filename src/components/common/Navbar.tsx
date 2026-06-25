@@ -76,7 +76,7 @@ export function Navbar() {
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-surface/5"
                   >
-                    Historial de Compras
+                    Compras
                   </button>
                   <button
                     onClick={handleLogout}

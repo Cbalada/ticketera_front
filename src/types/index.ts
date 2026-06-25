@@ -51,6 +51,7 @@ export interface Purchase {
   totalAmount: string;
   status: 'SUCCESS' | 'FAILED' | 'PENDING';
   createdAt: string;
+  reservation?: Reservation;
 }
 
 export interface EventSales {

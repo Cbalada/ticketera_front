@@ -174,11 +174,17 @@ export default function PaymentPage() {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Fecha de vencimiento</label>
-                    <input className="w-full bg-surface-container-low border border-white/10 rounded-lg px-4 py-3 focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed text-on-surface placeholder-white/20 transition-all outline-none" placeholder="MM/YY" type="text" />
+                    <div className="relative">
+                      <input className="w-full bg-surface-container-highest/20 border border-white/5 rounded-lg px-4 py-3 text-on-surface-variant cursor-not-allowed" readOnly type="text" value="**/**" />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-sm">lock</span>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Código de seguridad</label>
-                    <input className="w-full bg-surface-container-low border border-white/10 rounded-lg px-4 py-3 focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed text-on-surface placeholder-white/20 transition-all outline-none" maxLength={4} placeholder="CVV" type="password" />
+                    <div className="relative">
+                      <input className="w-full bg-surface-container-highest/20 border border-white/5 rounded-lg px-4 py-3 text-on-surface-variant cursor-not-allowed" readOnly type="text" value="***" />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-sm">lock</span>
+                    </div>
                   </div>
                 </div>
               </div>

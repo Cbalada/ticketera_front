@@ -80,10 +80,9 @@ export default function EventsList() {
                   <span className="material-symbols-outlined text-[18px]">calendar_today</span>
                   <span>{dt.date}</span>
                 </span>
-                <span className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">schedule</span>
-                  <span>{dt.time}</span>
-                </span>
+               <span className="flex items-center gap-2">
+                <span>Show {dt.time} hs</span>
+              </span>
               </div>
             </div>
           </Link>

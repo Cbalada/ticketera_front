@@ -85,7 +85,7 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex items-start space-x-6 p-6 rounded-xl glass-panel transition-colors hover:bg-white/10 group h-40">
-                    <div className="bg-secondary/20 p-4 rounded-lg text-secondary group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+                    <div className="bg-violet-500/20 p-4 rounded-lg text-violet-500 group-hover:bg-violet-500 group-hover:text-white transition-colors">
                       <span className="material-symbols-outlined text-3xl">stars</span>
                     </div>
                     <div>
@@ -117,7 +117,7 @@ export default function Home() {
                   <span className="font-label-md">FAST PASS INCLUIDO</span>
                 </div>
                 <div className="absolute bottom-20 -left-10 glass-panel px-6 py-4 rounded-full flex items-center space-x-3 transform -rotate-6">
-                  <span className="material-symbols-outlined text-secondary">cookie</span>
+                  <span className="material-symbols-outlined text-secondary-fixed">cookie</span>
                   <span className="font-label-md">DRINK BAR EXCLUSIVE</span>
                 </div>
               </div>
