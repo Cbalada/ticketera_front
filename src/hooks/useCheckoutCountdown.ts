@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useReservationStore } from '@/store/reservationStore';
 
 export function formatCountdown(ms: number) {
@@ -16,7 +15,6 @@ interface UseCheckoutCountdownOptions {
 }
 
 export function useCheckoutCountdown(options: UseCheckoutCountdownOptions = {}) {
-  const router = useRouter();
   const { expiresAt, clearStore } = useReservationStore();
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const onExpireRef = useRef(options.onExpire);
@@ -33,7 +31,6 @@ export function useCheckoutCountdown(options: UseCheckoutCountdownOptions = {}) 
       if (ms <= 0) {
         clearStore();
         onExpireRef.current?.();
-        router.push('/checkout/timeout');
         return;
       }
       setRemainingMs(ms);
@@ -42,7 +39,7 @@ export function useCheckoutCountdown(options: UseCheckoutCountdownOptions = {}) 
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [expiresAt, clearStore, router]);
+  }, [expiresAt, clearStore]);
 
   return { remainingMs, expiresAt };
 }

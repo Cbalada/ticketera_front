@@ -11,6 +11,7 @@ import { useReservationLeaveGuard } from '@/components/checkout/ReservationLeave
 import { useEventSubscription } from '@/hooks/useEventSubscription';
 import { useCheckoutCountdown } from '@/hooks/useCheckoutCountdown';
 import { CheckoutCountdown } from '@/components/checkout/CheckoutCountdown';
+import { ReservationExpiredModal } from '@/components/checkout/ReservationExpiredModal';
 import { createPurchase } from '@/lib/purchasesService';
 import { parseApiError } from '@/lib/apiError';
 import type { EventSector, Reservation } from '@/types';
@@ -33,11 +34,14 @@ export default function PaymentPage() {
   const reservationLeaveGuard = useReservationLeaveGuard();
 
   const [showModal, setShowModal] = useState(false);
+  const [showExpiredModal, setShowExpiredModal] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
   const { data: event } = useEvent(selectedEventId ?? undefined);
-  const { remainingMs } = useCheckoutCountdown();
+  const { remainingMs } = useCheckoutCountdown({
+    onExpire: () => setShowExpiredModal(true),
+  });
 
   const reservationIds = useMemo(
     () => new Set(reservations.map((r) => r.id)),
@@ -48,10 +52,10 @@ export default function PaymentPage() {
     (payload: { reservationId: number }) => {
       if (reservationIds.has(payload.reservationId)) {
         clearStore();
-        router.push('/checkout/timeout');
+        setShowExpiredModal(true);
       }
     },
-    [reservationIds, clearStore, router]
+    [reservationIds, clearStore]
   );
 
   useEventSubscription(selectedEventId ?? undefined, {
@@ -59,10 +63,10 @@ export default function PaymentPage() {
   });
 
   useEffect(() => {
-    if (reservations.length === 0) {
+    if (reservations.length === 0 && !showExpiredModal) {
       router.replace(selectedEventId ? `/events/${selectedEventId}/sectors` : '/events');
     }
-  }, [reservations.length, selectedEventId, router]);
+  }, [reservations.length, selectedEventId, router, showExpiredModal]);
 
   const lineItems = useMemo(() => {
     return reservations.map((reservation) => {
@@ -117,7 +121,7 @@ export default function PaymentPage() {
     router.push('/profile');
   };
 
-  if (reservations.length === 0) {
+  if (reservations.length === 0 && !showExpiredModal) {
     return null;
   }
 
@@ -270,6 +274,15 @@ export default function PaymentPage() {
         </div>
       </main>
       <Footer />
+
+      {showExpiredModal && (
+        <ReservationExpiredModal
+          onClose={() => {
+            clearStore();
+            router.push('/');
+          }}
+        />
+      )}
 
       {/* Success Modal */}
       {showModal && (

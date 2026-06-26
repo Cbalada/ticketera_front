@@ -11,6 +11,7 @@ import { useEvent } from '@/hooks/useEvent';
 import { useEventStockSync } from '@/hooks/useEventStockSync';
 import { useCheckoutCountdown } from '@/hooks/useCheckoutCountdown';
 import { CheckoutCountdown } from '@/components/checkout/CheckoutCountdown';
+import { ReservationExpiredModal } from '@/components/checkout/ReservationExpiredModal';
 import { createReservation } from '@/lib/reservationsService';
 import { parseApiError } from '@/lib/apiError';
 import type { EventSector, Sector } from '@/types';
@@ -48,12 +49,15 @@ export default function SectorsPage() {
   const [expandedSector, setExpandedSector] = useState<number | null>(null);
   const [isReserving, setIsReserving] = useState(false);
   const [reserveError, setReserveError] = useState<string | null>(null);
+  const [showExpiredModal, setShowExpiredModal] = useState(false);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { selectedSectors, setSectorQuantity, setSelectedEventId, clearSelectedSectors, setReservations, startCheckoutTimer, clearStore, expiresAt } =
     useReservationStore();
 
   const { data: event, isLoading, isError, error, refetch } = useEvent(eventId);
-  const { remainingMs } = useCheckoutCountdown();
+  const { remainingMs } = useCheckoutCountdown({
+    onExpire: () => setShowExpiredModal(true),
+  });
 
   useEventStockSync(eventId);
 
@@ -415,6 +419,16 @@ export default function SectorsPage() {
           </div>
         </section>
       </main>
+
+      {showExpiredModal && (
+        <ReservationExpiredModal
+          onClose={() => {
+            clearStore();
+            router.push('/');
+          }}
+        />
+      )}
+
       <Footer />
     </>
   );
