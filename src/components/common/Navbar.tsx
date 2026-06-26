@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import useExperienceNavigation from '@/hooks/useExperienceNavigation';
 import { useAuthStore } from '@/store/authStore';
 import { fetchClient } from '@/lib/fetchClient';
+import { useReservationLeaveGuard } from '@/components/checkout/ReservationLeaveGuard';
 
 export function Navbar() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export function Navbar() {
   const logout = useAuthStore((s) => s.logout);
   const [open, setOpen] = useState(false);
   const navigateToExperience = useExperienceNavigation();
+  const reservationLeaveGuard = useReservationLeaveGuard();
 
   const handleLogout = async () => {
     const confirmed = confirm('¿Estás seguro que quieres cerrar sesión?');
@@ -60,9 +62,12 @@ export function Navbar() {
                 <div className="absolute right-0 mt-2 w-44 bg-surface-container rounded-md shadow-lg border border-white/5 py-2">
                   {user?.role === 'ADMIN' && (
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setOpen(false);
-                        router.push('/admin/events');
+                        const allowed = await reservationLeaveGuard.promptLeave('/admin/events');
+                        if (allowed) {
+                          router.push('/admin/events');
+                        }
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-surface/5"
                     >
@@ -70,9 +75,12 @@ export function Navbar() {
                     </button>
                   )}
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setOpen(false);
-                      router.push('/profile');
+                      const allowed = await reservationLeaveGuard.promptLeave('/profile');
+                      if (allowed) {
+                        router.push('/profile');
+                      }
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-surface/5"
                   >

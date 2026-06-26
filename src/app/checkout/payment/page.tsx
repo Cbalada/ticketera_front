@@ -7,6 +7,7 @@ import { Footer } from '@/components/common/Footer';
 import { useReservationStore } from '@/store/reservationStore';
 import { usePurchaseStore } from '@/store/purchaseStore';
 import { useEvent } from '@/hooks/useEvent';
+import { useReservationLeaveGuard } from '@/components/checkout/ReservationLeaveGuard';
 import { useEventSubscription } from '@/hooks/useEventSubscription';
 import { useCheckoutCountdown } from '@/hooks/useCheckoutCountdown';
 import { CheckoutCountdown } from '@/components/checkout/CheckoutCountdown';
@@ -29,6 +30,7 @@ export default function PaymentPage() {
     clearStore,
   } = useReservationStore();
   const { setCurrentPurchase } = usePurchaseStore();
+  const reservationLeaveGuard = useReservationLeaveGuard();
 
   const [showModal, setShowModal] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
@@ -129,7 +131,16 @@ export default function PaymentPage() {
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
           <div className="lg:col-span-8">
-            <button className="flex items-center gap-2 mb-8 text-on-surface-variant hover:text-primary-fixed transition-colors" onClick={() => router.back()}>
+            <button
+              className="flex items-center gap-2 mb-8 text-on-surface-variant hover:text-primary-fixed transition-colors"
+              onClick={async () => {
+                const destination = selectedEventId ? `/events/${selectedEventId}/sectors` : '/events';
+                const allowed = await reservationLeaveGuard.promptLeave(destination);
+                if (allowed) {
+                  router.push(destination);
+                }
+              }}
+            >
               <span className="material-symbols-outlined">arrow_back</span>
               <span className="text-[11px] font-bold uppercase tracking-widest">VOLVER</span>
             </button>
