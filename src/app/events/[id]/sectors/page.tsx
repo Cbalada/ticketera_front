@@ -109,6 +109,17 @@ export default function SectorsPage() {
     );
   }, [event, selectedSectors]);
 
+  const orderedSectors = useMemo(() => {
+    if (!event) return [] as EventSector[];
+    const orderMap: Record<string, number> = {
+      VIP: 0,
+      PLATEA_A: 1,
+      PLATEA_B: 2,
+      CAMPO: 3,
+    };
+    return [...event.sectors].sort((a, b) => (orderMap[a.sector] ?? 99) - (orderMap[b.sector] ?? 99));
+  }, [event]);
+
   const handleContinue = async () => {
     if (totalTickets === 0 || !eventId || !event) return;
 
@@ -309,7 +320,7 @@ export default function SectorsPage() {
               </div>
               
               <div className="flex flex-col gap-3 flex-grow">
-                {event.sectors.map((sector) => {
+                {orderedSectors.map((sector) => {
                   const isExpanded = expandedSector === sector.id;
                   const quantity = getSectorQuantity(sector.id);
                   const displayName = getSectorDisplayName(sector.sector);
