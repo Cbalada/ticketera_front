@@ -18,6 +18,7 @@ export interface AuthResponse {
 export interface EventSector {
   id: number;
   eventId: number;
+  event?: Event;
   sector: Sector;
   price: string; // El API lo devuelve como string (ej. "30000.00")
   capacity: number;

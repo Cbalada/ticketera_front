@@ -42,6 +42,7 @@ export const fetchClient = async <T>(endpoint: string, options: FetchOptions = {
     if (!isRefreshing) {
       isRefreshing = true;
       const refreshToken = store.refreshToken;
+      const isAuthRequest = endpoint.startsWith('/auth/');
 
       if (refreshToken) {
         try {
@@ -70,6 +71,12 @@ export const fetchClient = async <T>(endpoint: string, options: FetchOptions = {
           throw error;
         }
       } else {
+        isRefreshing = false;
+        if (isAuthRequest) {
+          const errorData = await response.json().catch(() => ({ message: 'Unauthorized' }));
+          throw errorData;
+        }
+
         store.logout();
         throw new Error('No refresh token available');
       }

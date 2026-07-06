@@ -4,11 +4,19 @@ import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { useAuthStore } from '@/store/authStore';
 import { usePurchases } from '@/hooks/usePurchases';
+import type { Purchase, Reservation, Event as EventType } from '@/types';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { user, logout } = useAuthStore();
   const { data: purchases, isLoading, isError, isSuccess } = usePurchases();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
 
   return (
     <>
@@ -17,7 +25,7 @@ export default function ProfilePage() {
         <div className="flex justify-between items-center mb-12">
           <h1 className="text-3xl font-display font-extrabold text-white">Mi Perfil</h1>
           <button 
-            onClick={logout}
+            onClick={handleLogout}
             className="text-error font-bold uppercase text-xs tracking-wider border border-error/20 px-4 py-2 rounded-lg hover:bg-error/10 transition-colors"
           >
             Cerrar Sesión
@@ -32,10 +40,6 @@ export default function ProfilePage() {
               </div>
               <h2 className="text-xl font-bold text-white mb-2">{user?.name || 'Fan Destacado'}</h2>
               <p className="text-on-surface-variant mb-6">{user?.email || 'fan@ticketplus.com'}</p>
-              <div className="w-full bg-surface-container-low rounded-lg p-4 text-left">
-                <span className="text-xs uppercase tracking-widest text-on-surface-variant font-bold">Nivel</span>
-                <p className="text-primary-fixed font-bold text-lg mt-1">Pulse Member</p>
-              </div>
             </div>
           </div>
           
@@ -53,10 +57,6 @@ export default function ProfilePage() {
                       <div>
                         <span className="text-[10px] uppercase tracking-widest text-primary-fixed font-bold mb-1 block">Próximo Show</span>
                         <h4 className="text-xl font-bold text-white uppercase">&nbsp;</h4>
-                      </div>
-                      <div className="bg-white/10 rounded px-2 py-1 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">qr_code_2</span>
-                        <span className="text-xs font-bold">&nbsp;</span>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm text-on-surface-variant">
@@ -93,11 +93,11 @@ export default function ProfilePage() {
 
             {/** Render purchases */}
             {isSuccess && purchases && purchases.length > 0 && (
-              <div className="space-y-4">
-                {purchases.map((purchase) => {
-                  const reservation = purchase.reservation as any;
-                  const event = reservation?.eventSector?.event as any;
-                  const sector = reservation?.eventSector?.sector as string | undefined;
+              <div className={`space-y-4 ${purchases.length >= 5 ? 'max-h-[calc(100vh-24rem)] overflow-y-auto scroll-smooth pr-2' : ''}`}>
+                {purchases.map((purchase: Purchase) => {
+                  const reservation: Reservation | undefined = purchase.reservation;
+                  const event: EventType | undefined = reservation?.eventSector?.event;
+                  const sector: string | undefined = reservation?.eventSector?.sector;
                   const dateStr = event?.date ? new Date(event.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 
                   return (
@@ -112,20 +112,15 @@ export default function ProfilePage() {
                             <span className="text-[10px] uppercase tracking-widest text-primary-fixed font-bold mb-1 block">Próximo Show</span>
                             <h4 className="text-xl font-bold text-white uppercase">{event?.title || 'Evento'}</h4>
                           </div>
-                          <div className="bg-white/10 rounded px-2 py-1 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">qr_code_2</span>
-                            <span className="text-xs font-bold">Ver QR</span>
-                          </div>
+
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm text-on-surface-variant">
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-1">Fecha</span>
-                            <span className="text-white font-medium">{dateStr}</span>
-                          </div>
-                          <div>
-                            <span className="block text-[10px] uppercase tracking-wider mb-1">Sector</span>
-                            <span className="text-secondary font-medium">{sector || '—'}</span>
-                          </div>
+                        <div className="text-white">
+                          <span className="block text-[10px] uppercase tracking-wider mb-1">
+                            Sector
+                          </span>
+                          <span className="font-medium">
+                            {sector || '—'}
+                          </span>
                         </div>
                       </div>
                     </div>

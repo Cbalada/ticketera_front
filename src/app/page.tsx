@@ -53,7 +53,7 @@ export default function Home() {
           <div className="flex justify-between items-end mb-12">
             <div>
               <h2 className="font-display text-headline-lg mb-4">SHOWS RECOMENDADOS</h2>
-              <p className="text-on-surface-variant font-body-lg">No te pierdas los eventos más calientes de la temporada.</p>
+              {/* <p className="text-on-surface-variant font-body-lg">No te pierdas los eventos más calientes de la temporada.</p> */}
             </div>
             <Link href="/events" className="text-primary-fixed font-label-md flex items-center space-x-2 group">
               <span>VER TODOS</span>

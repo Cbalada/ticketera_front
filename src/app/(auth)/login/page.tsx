@@ -88,9 +88,7 @@ export default function LoginPage() {
                   placeholder="••••••••" 
                   type="password" 
                 />
-                <button className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface" type="button">
-                  <span className="material-symbols-outlined text-xl">visibility</span>
-                </button>
+                
               </div>
               {errors.password && <p className="text-error text-xs mt-1">{errors.password.message}</p>}
             </div>
