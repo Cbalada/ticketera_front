@@ -9,7 +9,7 @@ export default function Home() {
     <>
       <Navbar />
       <HashScrollHandler />
-      <main>
+      <main id="inicio">
         {/* Hero Section */}
         <section className="relative h-[90vh] flex items-center overflow-hidden">
           <div className="absolute inset-0 z-0">

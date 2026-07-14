@@ -210,13 +210,13 @@ export default function EventDetailsPage() {
             </div>
 
             {/* Secondary Info Card */}
-            <div className="mt-8 glass-panel p-6 rounded-2xl border border-white/5">
+            {/* <div className="mt-8 glass-panel p-6 rounded-2xl border border-white/5">
               <h3 className="text-white font-display text-label-md mb-4 uppercase tracking-wider">Ubicación del Teatro</h3>
               <div className="aspect-square rounded-xl overflow-hidden bg-surface-container-highest flex items-center justify-center relative">
                 <img alt={`Mapa de ${event.title}`} className="absolute inset-0 w-full h-full object-cover grayscale opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOFr86uKyAbhBaZI5MBwUMhTkl2AhxJFpkotJl4VSs_W15Ut6Qa64mBMyw2N8fw1ibMAXj10Su-CcPCHoMqrJW6thnNM2AnVHFxO44Hk2T8TUcUrvyqiMlpCLUSLwA3HLRO3YupU5HTzDohes-kH7RNrmxbQWiaC0VKfH8ZDJYoswoYB8Y1LtfkeQ2UIopCRe_UGnfzNKbwiZ4POeI3BwVYyMopPgPdu2nac0gRugLS9cvnVJqJ8ms9PENocDdZnSVdlVkCwFacXk" />
                 <span className="material-symbols-outlined text-primary-fixed text-4xl z-10 drop-shadow-lg">location_on</span>
               </div>
-            </div>
+            </div> */}
           </aside>
         </div>
       </main>

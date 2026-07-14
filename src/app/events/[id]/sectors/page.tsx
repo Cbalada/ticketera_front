@@ -12,6 +12,7 @@ import { useEventStockSync } from '@/hooks/useEventStockSync';
 import { useCheckoutCountdown } from '@/hooks/useCheckoutCountdown';
 import { CheckoutCountdown } from '@/components/checkout/CheckoutCountdown';
 import { ReservationExpiredModal } from '@/components/checkout/ReservationExpiredModal';
+import { useReservationLeaveGuard } from '@/components/checkout/ReservationLeaveGuard';
 import { createReservation } from '@/lib/reservationsService';
 import { parseApiError } from '@/lib/apiError';
 import type { EventSector, Sector } from '@/types';
@@ -45,6 +46,7 @@ export default function SectorsPage() {
   const params = useParams() as { id?: string | string[] } | undefined;
   const rawId = params?.id;
   const eventId = Array.isArray(rawId) ? rawId[0] : rawId;
+  const reservationLeaveGuard = useReservationLeaveGuard();
 
   const [expandedSector, setExpandedSector] = useState<number | null>(null);
   const [isReserving, setIsReserving] = useState(false);
@@ -242,6 +244,20 @@ export default function SectorsPage() {
     <>
       <Navbar />
       <main className="max-w-container-max mx-auto px-margin-desktop py-12">
+        <button
+          className="flex items-center gap-2 mb-8 text-on-surface-variant hover:text-primary-fixed transition-colors"
+          onClick={async () => {
+            const destination = `/events/${eventId}`;
+            const allowed = await reservationLeaveGuard.promptLeave(destination);
+            if (allowed) {
+              router.push(destination);
+            }
+          }}
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest">VOLVER</span>
+        </button>
+
         <div className="mb-10">
           <h1 className="font-display text-headline-lg text-white mb-2 uppercase tracking-tight">{event.title}</h1>
           <div className="flex items-center gap-3 text-on-surface-variant mb-4">
@@ -261,7 +277,7 @@ export default function SectorsPage() {
               </div>
               
               <div className="flex flex-col items-center justify-center h-full p-12 gap-8">
-                <div className="w-full text-center">
+                <div className="w-full text-center mt-10">
                   <span className="text-label-md font-label-md text-on-surface-variant tracking-[0.3em] uppercase mb-8 block">Mapa del Recinto</span>
                 </div>
                 

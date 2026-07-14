@@ -28,7 +28,7 @@ export function Footer() {
             <ul className="space-y-4">
             <li>
                 <Link
-                href="/"
+                href="/#inicio"
                 className="text-on-surface-variant hover:text-primary-fixed transition-colors"
                 >
                 Inicio

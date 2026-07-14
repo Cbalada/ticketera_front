@@ -38,7 +38,7 @@ export function Navbar() {
           Ticket +
         </Link>
         <nav className="hidden md:flex items-center space-x-8 md:absolute md:left-1/2 md:-translate-x-1/2">
-          <Link className="text-primary-fixed font-bold border-b-2 border-primary-fixed pb-1" href="/">Inicio</Link>
+          <Link className="text-primary-fixed font-bold border-b-2 border-primary-fixed pb-1" href="/#inicio">Inicio</Link>
           <Link className="text-on-surface-variant hover:text-primary transition-colors" href="/events">Shows</Link>
           <Link onClick={navigateToExperience} className="text-on-surface-variant hover:text-primary transition-colors" href="/#ticket-plus-experience">Experiencias</Link>
         </nav>
