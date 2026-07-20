@@ -1,8 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import useExperienceNavigation from '@/hooks/useExperienceNavigation';
 import { useAuthStore } from '@/store/authStore';
 import { fetchClient } from '@/lib/fetchClient';
@@ -10,12 +10,62 @@ import { useReservationLeaveGuard } from '@/components/checkout/ReservationLeave
 
 export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [open, setOpen] = useState(false);
+  const [activeItem, setActiveItem] = useState<'inicio' | 'experiencias' | 'shows' | undefined>('inicio');
   const navigateToExperience = useExperienceNavigation();
   const reservationLeaveGuard = useReservationLeaveGuard();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const updateActiveItem = () => {
+      if (pathname === '/events') {
+        setActiveItem('shows');
+        return;
+      }
+
+      if (pathname === '/') {
+        const hash = window.location.hash;
+        if (hash === '#ticket-plus-experience') {
+          setActiveItem('experiencias');
+          return;
+        }
+
+        if (hash === '#inicio') {
+          setActiveItem('inicio');
+          return;
+        }
+
+        const inicioEl = document.getElementById('inicio');
+        const experienceEl = document.getElementById('ticket-plus-experience');
+
+        if (!inicioEl || !experienceEl) {
+          setActiveItem('inicio');
+          return;
+        }
+
+        const scrollPosition = window.scrollY + window.innerHeight / 3;
+        if (scrollPosition >= experienceEl.offsetTop) {
+          setActiveItem('experiencias');
+        } else {
+          setActiveItem('inicio');
+        }
+      }
+    };
+
+    updateActiveItem();
+    window.addEventListener('scroll', updateActiveItem, { passive: true });
+    window.addEventListener('hashchange', updateActiveItem);
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveItem);
+      window.removeEventListener('hashchange', updateActiveItem);
+    };
+  }, [pathname]);
 
   const handleLogout = async () => {
     const confirmed = confirm('¿Estás seguro que quieres cerrar sesión?');
@@ -38,9 +88,28 @@ export function Navbar() {
           Ticket +
         </Link>
         <nav className="hidden md:flex items-center space-x-8 md:absolute md:left-1/2 md:-translate-x-1/2">
-          <Link className="text-primary-fixed font-bold border-b-2 border-primary-fixed pb-1" href="/#inicio">Inicio</Link>
-          <Link className="text-on-surface-variant hover:text-primary transition-colors" href="/events">Shows</Link>
-          <Link onClick={navigateToExperience} className="text-on-surface-variant hover:text-primary transition-colors" href="/#ticket-plus-experience">Experiencias</Link>
+          <Link
+            className={`font-bold pb-1 transition-colors ${activeItem === 'inicio' ? 'text-primary-fixed border-b-2 border-primary-fixed' : 'text-on-surface-variant hover:text-primary'}`}
+            href="/#inicio"
+            aria-current={activeItem === 'inicio' ? 'page' : undefined}
+          >
+            Inicio
+          </Link>
+          <Link
+            className={`font-bold pb-1 transition-colors ${activeItem === 'shows' ? 'text-primary-fixed border-b-2 border-primary-fixed' : 'text-on-surface-variant hover:text-primary'}`}
+            href="/events"
+            aria-current={activeItem === 'shows' ? 'page' : undefined}
+          >
+            Shows
+          </Link>
+          <Link
+            onClick={navigateToExperience}
+            className={`font-bold pb-1 transition-colors ${activeItem === 'experiencias' ? 'text-primary-fixed border-b-2 border-primary-fixed' : 'text-on-surface-variant hover:text-primary'}`}
+            href="/#ticket-plus-experience"
+            aria-current={activeItem === 'experiencias' ? 'page' : undefined}
+          >
+            Experiencias
+          </Link>
         </nav>
         <div className="flex items-center space-x-6">
           {!isAuthenticated ? (

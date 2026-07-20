@@ -20,6 +20,14 @@ function formatDate(iso?: string) {
   }
 }
 
+function stripSigns(text: string) {
+  return text.replace(/[^a-zA-Z0-9À-ÿ\s]/g, '');
+}
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, '');
+}
+
 export default function AdminEventsPage() {
   const { data: events, isLoading, isError, refetch } = useEvents();
   const createMutation = useCreateEvent();
@@ -105,9 +113,10 @@ export default function AdminEventsPage() {
     if (v) return alert(v);
     try {
       if (editMode && selected) {
-        await updateMutation.mutateAsync({ id: selected.id, data: toPayload() as any });
+        const updatedEvent = await updateMutation.mutateAsync({ id: selected.id, data: toPayload() as any });
         setShowCreate(false);
         setShowSuccess('Evento actualizado correctamente');
+        setSelected(updatedEvent);
       } else {
         await createMutation.mutateAsync(toPayload() as any);
         setShowCreate(false);
@@ -176,11 +185,11 @@ export default function AdminEventsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-on-surface-variant text-sm">Título</label>
-                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full bg-surface-container px-3 py-2 rounded" />
+                <input value={form.title} onChange={(e) => setForm({ ...form, title: stripSigns(e.target.value) })} className="w-full bg-surface-container px-3 py-2 rounded" />
               </div>
               <div>
                 <label className="block text-on-surface-variant text-sm">Descripción</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full bg-surface-container px-3 py-2 rounded" />
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: stripSigns(e.target.value) })} className="w-full bg-surface-container px-3 py-2 rounded" />
               </div>
               <div>
                 <label className="block text-on-surface-variant text-sm">Imagen (URL)</label>
@@ -209,11 +218,47 @@ export default function AdminEventsPage() {
                       </div>
                       <div className="flex-1">
                         <label className="text-xs text-on-surface-variant">Precio</label>
-                        <input type="number" min={1} value={s.price as any} onChange={(e) => updateSector(idx, 'price', e.target.value)} className="w-full mt-1 rounded px-2 py-2 bg-surface-container" />
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={s.price as any}
+                          onChange={(e) => updateSector(idx, 'price', onlyDigits(e.target.value))}
+                          onKeyDown={(e) => {
+                            if (!/^[0-9]$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'].includes(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onPaste={(e) => {
+                            const paste = e.clipboardData.getData('text');
+                            if (/\D/.test(paste)) e.preventDefault();
+                          }}
+                          className="w-full mt-1 rounded px-2 py-2 bg-surface-container"
+                        />
                       </div>
                       <div className="w-36">
                         <label className="text-xs text-on-surface-variant">Capacidad</label>
-                        <input type="number" min={1} value={s.capacity as any} onChange={(e) => updateSector(idx, 'capacity', e.target.value)} className="w-full mt-1 rounded px-2 py-2 bg-surface-container" />
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={s.capacity as any}
+                          onChange={(e) => updateSector(idx, 'capacity', onlyDigits(e.target.value))}
+                          onKeyDown={(e) => {
+                            if (!/^[0-9]$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'].includes(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onPaste={(e) => {
+                            const paste = e.clipboardData.getData('text');
+                            if (/\D/.test(paste)) e.preventDefault();
+                          }}
+                          className="w-full mt-1 rounded px-2 py-2 bg-surface-container"
+                        />
                       </div>
                       <div>
                         <button onClick={() => removeSector(idx)} className="text-error text-sm">Eliminar</button>

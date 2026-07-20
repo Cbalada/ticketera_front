@@ -85,7 +85,7 @@ export default function LoginPage() {
                   {...register('password')}
                   className="w-full h-14 pl-12 pr-12 bg-surface-container rounded-lg border border-outline-variant text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed transition-all" 
                   id="password" 
-                  placeholder="••••••••" 
+                  // placeholder="••••••••" 
                   type="password" 
                 />
                 

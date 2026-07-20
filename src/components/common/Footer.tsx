@@ -58,18 +58,8 @@ export function Footer() {
 
         <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="text-on-surface-variant text-sm opacity-80">
-            © 2024 Ticket +. Todos los derechos reservados.
+            © 2026 Ticket +. Todos los derechos reservados.
         </p>
-
-       <div className="flex space-x-6">
-            <a
-                href="cielitorodriguez39@gmail.com"
-                className="text-on-surface-variant hover:text-primary-fixed transition-colors"
-                aria-label="Contactar por correo"
-            >
-                <span className="material-symbols-outlined">email</span>
-            </a>
-        </div>
         </div>
     </div>
     </footer>
