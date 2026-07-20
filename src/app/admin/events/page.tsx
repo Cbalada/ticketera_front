@@ -316,7 +316,7 @@ export default function AdminEventsPage() {
 
                 <div className="flex gap-3 mt-6">
                   <button onClick={() => openEdit(selected)} className="px-4 py-2 rounded bg-primary-fixed text-black font-bold">Editar Evento</button>
-                  <button onClick={() => handleDelete(selected.id)} className="px-4 py-2 rounded bg-error text-white">Eliminar Evento</button>
+                  <button onClick={() => handleDelete(selected.id)} className="px-4 py-2 rounded  bg-red-600">Eliminar Evento</button>
                 </div>
               </div>
             </div>
