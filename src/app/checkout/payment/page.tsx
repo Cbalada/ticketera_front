@@ -128,7 +128,7 @@ export default function PaymentPage() {
   return (
     <>
       <Navbar />
-      <main className="flex-grow pt-32 pb-20 px-4 md:px-margin-desktop max-w-container-max mx-auto w-full relative">
+      <main className="flex-grow pt-15 pb-25 px-4 md:px-margin-desktop max-w-container-max mx-auto w-full relative">
         <div className="absolute top-0 right-0 -z-10 opacity-10 pointer-events-none">
           <div className="w-[600px] h-[600px] bg-primary-fixed rounded-full blur-[120px]"></div>
         </div>
@@ -225,8 +225,8 @@ export default function PaymentPage() {
           </div>
           
           {/* Sidebar Summary */}
-          <aside className="lg:col-span-4 mt-12 lg:mt-0">
-            <div className="glass-panel rounded-xl p-6 sticky top-24">
+          <aside className="lg:col-span-4 pt-30 mt-12 lg:mt-0">
+            <div className="glass-panel rounded-xl p-6   top-24">
               <h2 className="text-xl font-bold mb-6 border-b border-white/5 pb-4 text-white">Resumen de Compra</h2>
               <div className="mb-6 rounded-lg overflow-hidden aspect-[16/9]">
                 <img
