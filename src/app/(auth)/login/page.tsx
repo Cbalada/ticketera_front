@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormValues } from '@/features/auth/schemas';
@@ -15,19 +16,31 @@ export default function LoginPage() {
   const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: 'admin@tickets.com',
+      password: 'Admin123*',
+    },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    (async () => {
-      try {
-        const result = await fetchClient<AuthResponse>('/auth/login', { data });
-        useAuthStore.getState().setAuth(result.user, result.accessToken, result.refreshToken);
-        router.back();
-      } catch (err) {
-        console.error('Login error', err);
-      }
-    })();
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      const result = await fetchClient<AuthResponse>('/auth/login', { data });
+      useAuthStore.getState().setAuth(result.user, result.accessToken, result.refreshToken);
+      router.back();
+    } catch (err) {
+      console.error('Login error', err);
+    }
   };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void handleSubmit(onSubmit)();
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [handleSubmit, onSubmit]);
 
   return (
     <>
@@ -104,12 +117,12 @@ export default function LoginPage() {
             </button>
           </form>
           {/* Sign Up Link */}
-          <div className="mt-10 pt-10 border-t border-white/5 text-center">
+          {/* <div className="mt-10 pt-10 border-t border-white/5 text-center">
             <p className="text-sm text-on-surface-variant font-medium">
               ¿No tienes cuenta? 
               <Link className="text-primary-fixed font-bold hover:underline underline-offset-4 ml-1" href="/register">Regístrate</Link>
             </p>
-          </div>
+          </div> */}
         </main>
       </div>
       <Footer />

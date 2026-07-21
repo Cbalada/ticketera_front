@@ -36,6 +36,7 @@ export default function PaymentPage() {
   const [showModal, setShowModal] = useState(false);
   const [showExpiredModal, setShowExpiredModal] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
   const { data: event } = useEvent(selectedEventId ?? undefined);
@@ -63,10 +64,11 @@ export default function PaymentPage() {
   });
 
   useEffect(() => {
-    if (reservations.length === 0 && !showExpiredModal) {
-      router.replace(selectedEventId ? `/events/${selectedEventId}/sectors` : '/events');
+    if (!isRedirecting && reservations.length === 0 && !showExpiredModal) {
+      router.replace(selectedEventId ? `/events/${selectedEventId}/sectors` : '/');
     }
-  }, [reservations.length, selectedEventId, router, showExpiredModal]);
+  }, [reservations.length, selectedEventId, router, showExpiredModal, isRedirecting]);
+
 
   const lineItems = useMemo(() => {
     return reservations.map((reservation) => {
@@ -115,10 +117,11 @@ export default function PaymentPage() {
     }
   };
 
-  const handleSuccessClose = () => {
+  const handleSuccessClose = async () => {
+    setIsRedirecting(true);
     setShowModal(false);
+    await router.push('/profile');
     clearStore();
-    router.push('/profile');
   };
 
   if (reservations.length === 0 && !showExpiredModal) {
@@ -128,7 +131,7 @@ export default function PaymentPage() {
   return (
     <>
       <Navbar />
-      <main className="flex-grow pt-15 pb-25 px-4 md:px-margin-desktop max-w-container-max mx-auto w-full relative">
+      <main className="flex-grow pt-12 pb-25 px-4 md:px-margin-desktop max-w-container-max mx-auto w-full relative">
         <div className="absolute top-0 right-0 -z-10 opacity-10 pointer-events-none">
           <div className="w-[600px] h-[600px] bg-primary-fixed rounded-full blur-[120px]"></div>
         </div>
@@ -296,15 +299,19 @@ export default function PaymentPage() {
               <h2 className="font-display text-3xl font-extrabold text-white mb-6">¡Pago realizado con éxito!</h2>
               <div className="space-y-4">
                 <button 
+                  type="button"
                   onClick={handleSuccessClose}
                   className="w-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold py-4 rounded-sm uppercase tracking-widest text-xs transition-all active:scale-95"
                 >
                   Ver Mis Tickets
                 </button>
                 <button 
-                  onClick={() => {
+                  type="button"
+                  onClick={async () => {
+                    setIsRedirecting(true);
+                    setShowModal(false);
+                    await router.push('/#inicio');
                     clearStore();
-                    router.push('/');
                   }}
                   className="w-full text-on-surface-variant font-bold text-[10px] uppercase tracking-[0.2em] hover:text-primary-fixed transition-colors"
                 >
