@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormValues } from '@/features/auth/schemas';
@@ -22,7 +22,9 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const [countdown, setCountdown] = useState(5);
+
+  const onSubmit = useCallback(async (data: LoginFormValues) => {
     try {
       const result = await fetchClient<AuthResponse>('/auth/login', { data });
       useAuthStore.getState().setAuth(result.user, result.accessToken, result.refreshToken);
@@ -30,14 +32,19 @@ export default function LoginPage() {
     } catch (err) {
       console.error('Login error', err);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
+    const interval = window.setInterval(() => {
+      setCountdown((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
     const timer = window.setTimeout(() => {
       void handleSubmit(onSubmit)();
     }, 5000);
 
     return () => {
+      window.clearInterval(interval);
       window.clearTimeout(timer);
     };
   }, [handleSubmit, onSubmit]);
@@ -106,10 +113,11 @@ export default function LoginPage() {
               {errors.password && <p className="text-error text-xs mt-1">{errors.password.message}</p>}
             </div>
             {/* Remember Me */}
-            <div className="flex items-center gap-3">
+            {/* <div className="flex items-center gap-3">
               <input className="w-5 h-5 rounded border-outline-variant bg-surface-container text-primary-fixed focus:ring-primary-fixed focus:ring-offset-surface cursor-pointer" id="remember" type="checkbox" />
               <label className="text-sm text-on-surface-variant font-medium cursor-pointer select-none" htmlFor="remember">Mantener sesión iniciada</label>
-            </div>
+            </div> */}
+            <p className="text-center text-[11px] text-on-surface-variant">Se iniciará sesión automáticamente en {countdown} segundo{countdown === 1 ? '' : 's'}...</p>
             {/* Submit Button */}
             <button className="w-full bg-primary-fixed text-on-primary-fixed font-extrabold text-sm py-5 rounded-full uppercase tracking-[0.2em] primary-glow hover:scale-[1.02] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 mt-4" type="submit">
               <span>Iniciar Sesión</span>
