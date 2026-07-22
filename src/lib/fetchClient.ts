@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/store/authStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ticketera-back.onrender.com';
 
 interface FetchOptions extends RequestInit {
   data?: any;
