@@ -5,9 +5,8 @@ import { getEvents } from '@/lib/eventsService';
 import { Event } from '@/types';
 
 export const useEvents = (): UseQueryResult<Event[], Error> => {
-  return useQuery<Event[], Error>({
+  return useQuery<Event[], Error, Event[], readonly ['events']>({
     queryKey: ['events'],
-    queryFn: getEvents,
-    suspense: false,
+    queryFn: async (): Promise<Event[]> => getEvents(),
   });
 };

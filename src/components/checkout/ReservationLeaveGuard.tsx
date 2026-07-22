@@ -50,7 +50,7 @@ export function ReservationLeaveGuardProvider({ children }: { children: React.Re
     (destination: string) => {
       return new Promise<boolean>((resolve) => {
         const destinationPath = normalizePath(destination);
-        if (!hasActiveReservation || !shouldInterceptPath(destinationPath, pathname)) {
+        if (!destinationPath || !pathname || !hasActiveReservation || !shouldInterceptPath(destinationPath, pathname)) {
           resolve(true);
           return;
         }
