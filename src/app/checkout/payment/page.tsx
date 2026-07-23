@@ -13,6 +13,7 @@ import { useCheckoutCountdown } from '@/hooks/useCheckoutCountdown';
 import { CheckoutCountdown } from '@/components/checkout/CheckoutCountdown';
 import { ReservationExpiredModal } from '@/components/checkout/ReservationExpiredModal';
 import { createPurchase } from '@/lib/purchasesService';
+import { cancelReservation } from '@/lib/reservationsService';
 import { parseApiError } from '@/lib/apiError';
 import type { EventSector, Reservation } from '@/types';
 
@@ -117,6 +118,24 @@ export default function PaymentPage() {
     }
   };
 
+  const handleBack = async () => {
+    const destination = selectedEventId ? `/events/${selectedEventId}/sectors` : '/events';
+
+    if (reservations.length > 0) {
+      setIsRedirecting(true);
+      try {
+        await Promise.all(reservations.map((reservation) => cancelReservation(reservation.id)));
+        clearStore();
+      } catch (err) {
+        setIsRedirecting(false);
+        setPayError(parseApiError(err, 'No se pudo cancelar la reserva. Intentá nuevamente.'));
+        return;
+      }
+    }
+
+    await router.push(destination);
+  };
+
   const handleSuccessClose = async () => {
     setIsRedirecting(true);
     setShowModal(false);
@@ -140,11 +159,12 @@ export default function PaymentPage() {
           <div className="lg:col-span-8">
             <button
               className="flex items-center gap-2 mb-8 text-on-surface-variant hover:text-primary-fixed transition-colors"
+              disabled={isRedirecting}
               onClick={async () => {
                 const destination = selectedEventId ? `/events/${selectedEventId}/sectors` : '/events';
                 const allowed = await reservationLeaveGuard.promptLeave(destination);
                 if (allowed) {
-                  router.push(destination);
+                  await handleBack();
                 }
               }}
             >

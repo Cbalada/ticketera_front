@@ -10,6 +10,12 @@ export const createReservation = async (data: CreateReservationDto): Promise<Res
   return fetchClient<Reservation>('/reservations', { data });
 };
 
+export const cancelReservation = async (reservationId: number): Promise<Reservation | undefined> => {
+  return fetchClient<Reservation | undefined>(`/reservations/${reservationId}`, {
+    method: 'DELETE',
+  });
+};
+
 export const getMyReservations = async (): Promise<Reservation[]> => {
   return fetchClient<Reservation[]>('/reservations/my-reservations');
 };
