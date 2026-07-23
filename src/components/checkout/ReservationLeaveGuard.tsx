@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useReservationStore } from '@/store/reservationStore';
+import { cancelReservation } from '@/lib/reservationsService';
 
 interface ReservationLeaveGuardContextValue {
   promptLeave: (destination: string) => Promise<boolean>;
@@ -63,18 +64,30 @@ export function ReservationLeaveGuardProvider({ children }: { children: React.Re
     [hasActiveReservation, pathname]
   );
 
-  const handleConfirmLeave = useCallback(() => {
+  const cancelActiveReservations = useCallback(async () => {
+    const reservationsToCancel = [...reservations];
+    if (reservationsToCancel.length > 0) {
+      await Promise.all(reservationsToCancel.map((reservation) => cancelReservation(reservation.id)));
+    }
+    clearStore();
+  }, [reservations, clearStore]);
+
+  const handleConfirmLeave = useCallback(async () => {
     const resolve = resolveRef.current;
     resolveRef.current = null;
     setShowModal(false);
     const destination = pendingDestination;
     setPendingDestination(null);
-    clearStore();
-    if (destination) {
-      router.push(destination);
+    try {
+      await cancelActiveReservations();
+      if (destination) {
+        router.push(destination);
+      }
+      resolve?.(true);
+    } catch {
+      resolve?.(false);
     }
-    resolve?.(true);
-  }, [pendingDestination, clearStore, router]);
+  }, [pendingDestination, cancelActiveReservations, router]);
 
   const handleCancelLeave = useCallback(() => {
     const resolve = resolveRef.current;
@@ -87,9 +100,9 @@ export function ReservationLeaveGuardProvider({ children }: { children: React.Re
   useEffect(() => {
     if (!hasActiveReservation) return;
     if (pathname && !isAllowedPath(pathname)) {
-      clearStore();
+      void cancelActiveReservations();
     }
-  }, [pathname, hasActiveReservation, clearStore]);
+  }, [pathname, hasActiveReservation, cancelActiveReservations]);
 
   useEffect(() => {
     if (!hasActiveReservation) return;

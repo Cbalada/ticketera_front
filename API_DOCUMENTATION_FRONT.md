@@ -12,7 +12,7 @@ Este documento replica el formato de `API_DOCUMENTATION.md` pero lista las rutas
   - `/events/[id]/sectors` — listado de sectores para el evento `id`.
 - **Checkout:**
   - `/checkout` — resumen/confirmación de compra.
-  - `/checkout/payment` — flujo de pago.
+  - `/checkout/payment` — flujo de pago. El boton `VOLVER` hacia `/events/[id]/sectors` cancela las reservas activas con `DELETE /reservations/:id` antes de navegar, liberando tickets inmediatamente.
   - `/checkout/timeout` — pantalla de tiempo expirado / timeout.
 - **Admin:**
   - `/admin` — panel de administración.
