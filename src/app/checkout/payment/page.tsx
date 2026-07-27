@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { useReservationStore } from '@/store/reservationStore';
@@ -26,6 +27,7 @@ function getSectorPrice(event: { sectors: EventSector[] } | undefined, reservati
 
 export default function PaymentPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const {
     reservations,
     selectedEventId,
@@ -39,10 +41,15 @@ export default function PaymentPage() {
   const [isPaying, setIsPaying] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const suppressExpiredModalRef = useRef(false);
 
   const { data: event } = useEvent(selectedEventId ?? undefined);
   const { remainingMs } = useCheckoutCountdown({
-    onExpire: () => setShowExpiredModal(true),
+    onExpire: () => {
+      if (!suppressExpiredModalRef.current) {
+        setShowExpiredModal(true);
+      }
+    },
   });
 
   const reservationIds = useMemo(
@@ -52,6 +59,8 @@ export default function PaymentPage() {
 
   const handleReservationExpired = useCallback(
     (payload: { reservationId: number }) => {
+      if (suppressExpiredModalRef.current) return;
+
       if (reservationIds.has(payload.reservationId)) {
         clearStore();
         setShowExpiredModal(true);
@@ -120,6 +129,8 @@ export default function PaymentPage() {
 
   const handleBack = async () => {
     const destination = selectedEventId ? `/events/${selectedEventId}/sectors` : '/events';
+    suppressExpiredModalRef.current = true;
+    setShowExpiredModal(false);
 
     if (reservations.length > 0) {
       setIsRedirecting(true);
@@ -127,13 +138,22 @@ export default function PaymentPage() {
         await Promise.all(reservations.map((reservation) => cancelReservation(reservation.id)));
         clearStore();
       } catch (err) {
+        suppressExpiredModalRef.current = false;
         setIsRedirecting(false);
         setPayError(parseApiError(err, 'No se pudo cancelar la reserva. Intentá nuevamente.'));
         return;
       }
     }
 
+    if (selectedEventId) {
+      await queryClient.invalidateQueries({
+        queryKey: ['event', selectedEventId],
+        refetchType: 'all',
+      });
+    }
+
     await router.push(destination);
+    router.refresh();
   };
 
   const handleSuccessClose = async () => {
